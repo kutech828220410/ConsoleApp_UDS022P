@@ -177,7 +177,12 @@ namespace ConsoleApp_FindButtonPosition
         static void HandleUDS022PProcess()
         {
             string targetWindowName = "UDS022P"; // 替換為目標視窗名稱
-            RECT rECT_UDS022P = FindWindowAndChildren("程式【UDS022P】版本:1.20.1.1 Butterfly@");
+            RECT rECT_UDS022P = FindWindowAndChildrenBySimular("程式【UDS022P】");
+            if ((rECT_UDS022P.Left != 0 || rECT_UDS022P.Right != 0) == false)
+            {
+                Console.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} - 程式未開啟...");
+                return;
+            }
             SimulateMouseLeftClick(rECT_UDS022P.Left + 48, rECT_UDS022P.Top + 89);
             SendKeys.SendWait("{ENTER}"); // 模擬按下 Enter
             SimulateMouseLeftClick(rECT_UDS022P.Left + 310, rECT_UDS022P.Top + 82);
@@ -221,6 +226,47 @@ namespace ConsoleApp_FindButtonPosition
                         GetWindowText(hWnd, windowText, 256);
 
                         if (windowText.ToString() == windowName)
+                        {
+                            Console.WriteLine($"找到視窗: {windowText}");
+
+                            if (GetWindowRect(hWnd, out RECT rect))
+                            {
+                                Console.WriteLine($"視窗座標: 左上角 ({rect.Left}, {rect.Top}), 右下角 ({rect.Right}, {rect.Bottom})");
+                                rECT = rect;
+                            }
+
+                            ShowWindow(hWnd, SW_RESTORE);
+                            if (SetForegroundWindow(hWnd))
+                            {
+                                Console.WriteLine($"[{windowName}]視窗成功設置為前景！");
+                            }
+                        }
+                    }
+                    return true;
+                }, IntPtr.Zero);
+            }
+            return rECT;
+        }
+        /// <summary>
+        /// 尋找指定名稱的視窗
+        /// </summary>
+        static RECT FindWindowAndChildrenBySimular(string windowName)
+        {
+            Process[] processes = Process.GetProcesses();
+            RECT rECT = new RECT();
+
+            foreach (var process in processes)
+            {
+                EnumWindows((hWnd, lParam) =>
+                {
+                    GetWindowThreadProcessId(hWnd, out uint windowProcessId);
+
+                    if (windowProcessId == process.Id)
+                    {
+                        StringBuilder windowText = new StringBuilder(256);
+                        GetWindowText(hWnd, windowText, 256);
+
+                        if (windowText.ToString().Contains(windowName))
                         {
                             Console.WriteLine($"找到視窗: {windowText}");
 
