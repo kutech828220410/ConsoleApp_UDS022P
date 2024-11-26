@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Threading;
-
+using System.Drawing;
 namespace ConsoleApp_FindButtonPosition
 {
     class Program
@@ -76,7 +76,7 @@ namespace ConsoleApp_FindButtonPosition
         // --- 全域變數 ---
         private static string filePath = Path.Combine(GetDesktopPath(), "QMOrder");
         private static System.Threading.Mutex mutex; // 用於防止重複執行
-        private static int cycleTime = 10000; // 循環間隔時間（毫秒）
+        private static int cycleTime = 1000; // 循環間隔時間（毫秒）
 
         // --- 主程式 ---
         [STAThread]
@@ -183,11 +183,19 @@ namespace ConsoleApp_FindButtonPosition
                 Console.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} - 程式未開啟...");
                 return;
             }
+            //MoveMouseToScreenTopLeft(1);
             SimulateMouseLeftClick(rECT_UDS022P.Left + 48, rECT_UDS022P.Top + 89);
             SendKeys.SendWait("{ENTER}"); // 模擬按下 Enter
             SimulateMouseLeftClick(rECT_UDS022P.Left + 310, rECT_UDS022P.Top + 82);
-
-            RECT rECT_另存新檔 = FindWindowAndChildren("另存新檔");
+            Thread.Sleep(100);
+            RECT rECT_另存新檔 = new RECT();
+            while (true)
+            {
+                rECT_另存新檔 = FindWindowAndChildren("另存新檔");
+                if (rECT_另存新檔.Left != 0 || rECT_另存新檔.Right != 0) break;
+                Thread.Sleep(100);
+            }
+       
             SimulateMouseRightClick(rECT_另存新檔.Left + 302, rECT_另存新檔.Top + 343);
             Thread.Sleep(100);
             SendKeys.SendWait("A"); // 模擬輸入 'A'
@@ -197,9 +205,10 @@ namespace ConsoleApp_FindButtonPosition
             SimulateMouseLeftClick(rECT_另存新檔.Left + 503, rECT_另存新檔.Top + 344);
             Thread.Sleep(100);
 
-            RECT rECT_程式 = FindWindowAndChildren("程式");
+            RECT rECT_程式 = new RECT();
             while (true)
             {
+                rECT_程式 = FindWindowAndChildren("程式");
                 if (rECT_程式.Left != 0 || rECT_程式.Right != 0) break;
                 Thread.Sleep(100);
             }
@@ -322,6 +331,32 @@ namespace ConsoleApp_FindButtonPosition
                 Console.WriteLine($"清理過程中發生錯誤: {ex.Message}");
             }
         }
+        /// <summary>
+        /// 將滑鼠移動到指定螢幕的左上角
+        /// </summary>
+        /// <param name="screenNumber">螢幕編號（從 1 開始）</param>
+        /// <returns>是否成功移動</returns>
+        static bool MoveMouseToScreenTopLeft(int screenNumber)
+        {
+            // 驗證螢幕編號是否有效
+            if (screenNumber < 1 || screenNumber > Screen.AllScreens.Length)
+            {
+                Console.WriteLine("無效的螢幕編號！");
+                return false;
+            }
 
+            // 獲取指定編號的螢幕
+            Screen targetScreen = Screen.AllScreens[screenNumber - 1];
+
+            // 螢幕左上角的座標
+            int x = targetScreen.Bounds.Left;
+            int y = targetScreen.Bounds.Top;
+
+            // 移動滑鼠
+            SetCursorPos(x, y);
+
+            Console.WriteLine($"滑鼠已移動到第 {screenNumber} 號螢幕的左上角: ({x}, {y})");
+            return true;
+        }
     }
 }
