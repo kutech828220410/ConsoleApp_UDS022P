@@ -79,20 +79,23 @@ namespace ConsoleApp_FindButtonPosition
         // --- 全域變數 ---
         private static string filePath = Path.Combine(GetDesktopPath(), "QMOrder");
         private static System.Threading.Mutex mutex; // 用於防止重複執行
-        private static int cycleTime = 1000; // 循環間隔時間（毫秒）
+        private static int cycleTime = 30000; // 循環間隔時間（毫秒）
         static public string currentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         static private string DBConfigFileName = $"{currentDirectory}//DBConfig.txt";
         public class DBConfigClass
         {
             private string filipath = "";
-
+            private string appName = "";
+            private string cycleTime = "3000";
             public string Filipath { get => filipath; set => filipath = value; }
+            public string AppName { get => appName; set => appName = value; }
+            public string CycleTime { get => cycleTime; set => cycleTime = value; }
         }
         static DBConfigClass dBConfigClass = new DBConfigClass();
 
         static public bool LoadDBConfig()
         {
-            string jsonstr = MyFileStream.LoadFileAllText($"{DBConfigFileName}","utf-8");
+            string jsonstr = MyFileStream.LoadFileAllText($"{DBConfigFileName}");
             Console.WriteLine($"路徑 : {DBConfigFileName} 開始讀取");
             Console.WriteLine($"-------------------------------------------------------------------------");
             if (jsonstr.StringIsEmpty())
@@ -147,9 +150,11 @@ namespace ConsoleApp_FindButtonPosition
                 Console.ReadLine();
                 return;
             }
+            cycleTime = dBConfigClass.CycleTime.StringToInt32();
+            if (cycleTime < 0) cycleTime = 2000; 
             // 確保資料夾存在
             EnsureDirectoryExists(filePath);
-            CleanOldFiles(filePath, 5);
+          
             while (true)
             {
                 // 檢查是否按下 ESC 鍵
@@ -159,7 +164,7 @@ namespace ConsoleApp_FindButtonPosition
                     Thread.Sleep(3000);
                     break;
                 }
-
+                CleanOldFiles(filePath, 5);
                 // 處理 UDS022P 程式的操作
                 HandleUDS022PProcess();
 
@@ -235,10 +240,10 @@ namespace ConsoleApp_FindButtonPosition
         static void HandleUDS022PProcess()
         {
             string targetWindowName = "UDS022P"; // 替換為目標視窗名稱
-            RECT rECT_UDS022P = FindWindowAndChildrenBySimular("程式【UDS022P】");
+            RECT rECT_UDS022P = FindWindowAndChildrenBySimular(dBConfigClass. AppName);
             if ((rECT_UDS022P.Left != 0 || rECT_UDS022P.Right != 0) == false)
             {
-                Console.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} - 程式未開啟...");
+                Console.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} - [{dBConfigClass.AppName}]程式未開啟...");
                 return;
             }
             //MoveMouseToScreenTopLeft(1);
@@ -266,7 +271,7 @@ namespace ConsoleApp_FindButtonPosition
             RECT rECT_程式 = new RECT();
             while (true)
             {
-                rECT_程式 = FindWindowAndChildren("程式");
+                rECT_程式 = FindWindowAndChildren("快速配藥單作業");
                 if (rECT_程式.Left != 0 || rECT_程式.Right != 0) break;
                 Thread.Sleep(100);
             }
@@ -330,10 +335,10 @@ namespace ConsoleApp_FindButtonPosition
 
                     if (windowProcessId == process.Id)
                     {
-                        StringBuilder windowText = new StringBuilder(256);
-                        GetWindowText(hWnd, windowText, 256);
-
-                        if (windowText.ToString().Contains(windowName))
+                        StringBuilder windowText = new StringBuilder(512);
+                        GetWindowText(hWnd, windowText, 512);
+                        //Console.WriteLine($"找到視窗: {windowText}");
+                        if (windowText.ToString().ToUpper().IndexOf(windowName.ToUpper()) > 0)
                         {
                             Console.WriteLine($"找到視窗: {windowText}");
 
