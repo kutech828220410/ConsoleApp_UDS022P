@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Threading;
 using System.Drawing;
+using Basic;
+using System.Collections.Generic;
+using System.Reflection;
 namespace ConsoleApp_FindButtonPosition
 {
     class Program
@@ -77,7 +80,51 @@ namespace ConsoleApp_FindButtonPosition
         private static string filePath = Path.Combine(GetDesktopPath(), "QMOrder");
         private static System.Threading.Mutex mutex; // 用於防止重複執行
         private static int cycleTime = 1000; // 循環間隔時間（毫秒）
+        static public string currentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        static private string DBConfigFileName = $"{currentDirectory}//DBConfig.txt";
+        public class DBConfigClass
+        {
+            private string filipath = "";
 
+            public string Filipath { get => filipath; set => filipath = value; }
+        }
+        static DBConfigClass dBConfigClass = new DBConfigClass();
+
+        static public bool LoadDBConfig()
+        {
+            string jsonstr = MyFileStream.LoadFileAllText($"{DBConfigFileName}","utf-8");
+            Console.WriteLine($"路徑 : {DBConfigFileName} 開始讀取");
+            Console.WriteLine($"-------------------------------------------------------------------------");
+            if (jsonstr.StringIsEmpty())
+            {
+                jsonstr = Basic.Net.JsonSerializationt<DBConfigClass>(new DBConfigClass(), true);
+                List<string> list_jsonstring = new List<string>();
+                list_jsonstring.Add(jsonstr);
+                //if (!MyFileStream.SaveFile($"{DBConfigFileName}", list_jsonstring))
+                //{
+                //    Console.WriteLine($"建立{DBConfigFileName}檔案失敗!");
+                //    return false;
+                //}
+                //Console.WriteLine($"未建立參數文件!請至子目錄設定{DBConfigFileName}");
+                //return false;
+            }
+            else
+            {
+                dBConfigClass = Basic.Net.JsonDeserializet<DBConfigClass>(jsonstr);
+
+                jsonstr = Basic.Net.JsonSerializationt<DBConfigClass>(dBConfigClass, true);
+                //List<string> list_jsonstring = new List<string>();
+                //list_jsonstring.Add(jsonstr);
+                //if (!MyFileStream.SaveFile($"{DBConfigFileName}", list_jsonstring))
+                //{
+                //    Console.WriteLine($"建立{DBConfigFileName}檔案失敗!");
+                //    return false;
+                //}
+
+            }
+            return true;
+
+        }
         // --- 主程式 ---
         [STAThread]
         static void Main(string[] args)
@@ -88,7 +135,18 @@ namespace ConsoleApp_FindButtonPosition
             {
                 return;
             }
-
+            if(LoadDBConfig() == false)
+            {
+                Console.ReadLine();
+                return;
+            }
+            filePath = dBConfigClass.Filipath;
+            if(filePath.StringIsEmpty())
+            {
+                Console.WriteLine("資料路徑空白");
+                Console.ReadLine();
+                return;
+            }
             // 確保資料夾存在
             EnsureDirectoryExists(filePath);
             CleanOldFiles(filePath, 5);
@@ -195,7 +253,7 @@ namespace ConsoleApp_FindButtonPosition
                 if (rECT_另存新檔.Left != 0 || rECT_另存新檔.Right != 0) break;
                 Thread.Sleep(100);
             }
-       
+
             SimulateMouseRightClick(rECT_另存新檔.Left + 302, rECT_另存新檔.Top + 343);
             Thread.Sleep(100);
             SendKeys.SendWait("A"); // 模擬輸入 'A'
@@ -301,7 +359,7 @@ namespace ConsoleApp_FindButtonPosition
         /// 清理指定資料夾中前一分鐘的檔案
         /// </summary>
         /// <param name="folderPath">資料夾路徑</param>
-        static void CleanOldFiles(string folderPath , int min)
+        static void CleanOldFiles(string folderPath, int min)
         {
             if (!Directory.Exists(folderPath))
             {
@@ -330,33 +388,6 @@ namespace ConsoleApp_FindButtonPosition
             {
                 Console.WriteLine($"清理過程中發生錯誤: {ex.Message}");
             }
-        }
-        /// <summary>
-        /// 將滑鼠移動到指定螢幕的左上角
-        /// </summary>
-        /// <param name="screenNumber">螢幕編號（從 1 開始）</param>
-        /// <returns>是否成功移動</returns>
-        static bool MoveMouseToScreenTopLeft(int screenNumber)
-        {
-            // 驗證螢幕編號是否有效
-            if (screenNumber < 1 || screenNumber > Screen.AllScreens.Length)
-            {
-                Console.WriteLine("無效的螢幕編號！");
-                return false;
-            }
-
-            // 獲取指定編號的螢幕
-            Screen targetScreen = Screen.AllScreens[screenNumber - 1];
-
-            // 螢幕左上角的座標
-            int x = targetScreen.Bounds.Left;
-            int y = targetScreen.Bounds.Top;
-
-            // 移動滑鼠
-            SetCursorPos(x, y);
-
-            Console.WriteLine($"滑鼠已移動到第 {screenNumber} 號螢幕的左上角: ({x}, {y})");
-            return true;
         }
     }
 }
