@@ -164,7 +164,7 @@ namespace ConsoleApp_FindButtonPosition
                     Thread.Sleep(3000);
                     break;
                 }
-                CleanOldFiles(filePath, 5);
+                CleanOldFiles(filePath, 10);
                 // 處理 UDS022P 程式的操作
                 HandleUDS022PProcess();
 
@@ -239,44 +239,56 @@ namespace ConsoleApp_FindButtonPosition
         /// </summary>
         static void HandleUDS022PProcess()
         {
+            //CleanOldFiles(filePath, 5);
+            RECT rECT_HIS = FindWindowAndChildrenBySimular("和信治癌中心醫院");
+            SimulateMouseLeftClick(rECT_HIS.Left + 10, rECT_HIS.Top + 40);
+            Thread.Sleep(5000);
+
             string targetWindowName = "UDS022P"; // 替換為目標視窗名稱
-            RECT rECT_UDS022P = FindWindowAndChildrenBySimular(dBConfigClass. AppName);
+            RECT rECT_UDS022P = FindWindowAndChildrenBySimular(dBConfigClass.AppName);
             if ((rECT_UDS022P.Left != 0 || rECT_UDS022P.Right != 0) == false)
             {
                 Console.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} - [{dBConfigClass.AppName}]程式未開啟...");
                 return;
             }
-            //MoveMouseToScreenTopLeft(1);
+            
+
+
             SimulateMouseLeftClick(rECT_UDS022P.Left + 48, rECT_UDS022P.Top + 89);
             SendKeys.SendWait("{ENTER}"); // 模擬按下 Enter
             SimulateMouseLeftClick(rECT_UDS022P.Left + 310, rECT_UDS022P.Top + 82);
-            Thread.Sleep(100);
+            Thread.Sleep(2000);
             RECT rECT_另存新檔 = new RECT();
             while (true)
             {
                 rECT_另存新檔 = FindWindowAndChildren("另存新檔");
                 if (rECT_另存新檔.Left != 0 || rECT_另存新檔.Right != 0) break;
-                Thread.Sleep(100);
+                Thread.Sleep(2000);
             }
 
             SimulateMouseRightClick(rECT_另存新檔.Left + 302, rECT_另存新檔.Top + 343);
-            Thread.Sleep(100);
+            Thread.Sleep(1000);
             SendKeys.SendWait("A"); // 模擬輸入 'A'
             CopyToClipboard($@"{filePath}\{DateTime.Now:yyyyMMddHHmmss}.csv");
             SendKeys.SendWait("^v"); // 模擬 Ctrl + V
-            Thread.Sleep(100);
+            Thread.Sleep(1000);
             SimulateMouseLeftClick(rECT_另存新檔.Left + 503, rECT_另存新檔.Top + 344);
-            Thread.Sleep(100);
+            Thread.Sleep(1000);
 
             RECT rECT_程式 = new RECT();
             while (true)
             {
                 rECT_程式 = FindWindowAndChildren("快速配藥單作業");
                 if (rECT_程式.Left != 0 || rECT_程式.Right != 0) break;
-                Thread.Sleep(100);
+                Thread.Sleep(1000);
             }
             SendKeys.SendWait("{ENTER}"); // 模擬按下 Enter
+
+            rECT_UDS022P = FindWindowAndChildrenBySimular(dBConfigClass.AppName);
+            SimulateMouseLeftClick(rECT_UDS022P.Right - 44, rECT_UDS022P.Top + 89);
+
         }
+        
 
         /// <summary>
         /// 尋找指定名稱的視窗
